@@ -4,7 +4,7 @@ COPY pom.xml .
 COPY src ./src
 RUN mvn clean package -T12
 
-FROM openjdk:11-ea-17-jre-slim
+FROM openjdk:17-jdk-slim
 WORKDIR /usr/local/app
 RUN ls -la /app
 COPY --from=builder /app/target/LicenseServer.jar .
