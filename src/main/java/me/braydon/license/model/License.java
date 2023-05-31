@@ -67,7 +67,12 @@ public class License {
     private int hwidLimit;
     
     /**
-     * The date this license was created.
+     * The {@link Date} this license was last used.
+     */
+    private Date lastUsed;
+    
+    /**
+     * The {@link Date} this license was created.
      */
     @NonNull private Date created;
     
@@ -88,5 +93,6 @@ public class License {
         uses++; // Increment uses
         ips.add(ip); // Add the used IP
         hwids.add(hwid); // Add the used HWID
+        lastUsed = new Date(); // Last used now
     }
 }
