@@ -5,4 +5,4 @@
 
  | API Version - v${application.version}
  | Spring Version - ${spring-boot.formatted-version}
-_______________________________________
+___________________________________________________________
