@@ -3,9 +3,11 @@ server:
   address: 0.0.0.0
   port: 7500
 
-# The salt to use when hashing license keys.
-# This salt should be changed from the default.
-key-salt: "$2a$10$/nQyzQDMkCf97ZlJLLWa3O"
+# The salt to use when hashing license keys and IP addresses.
+# These salts should be changed from the default.
+salts:
+  licenses: "$2a$10$/nQyzQDMkCf97ZlJLLWa3O"
+  ips: "$2a$10$Xus.AHTCas97Ofx0tFs85O"
 
 # Log Configuration
 logging:

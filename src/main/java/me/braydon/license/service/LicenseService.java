@@ -3,7 +3,6 @@ package me.braydon.license.service;
 import jakarta.annotation.PostConstruct;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import me.braydon.license.common.RandomUtils;
 import me.braydon.license.exception.APIException;
 import me.braydon.license.exception.LicenseNotFoundException;
 import me.braydon.license.model.License;
@@ -33,8 +32,14 @@ public final class LicenseService {
     /**
      * The salt to use for hashing license keys.
      */
-    @Value("${key-salt}")
-    @NonNull private String keySalt;
+    @Value("${salts.licenses}")
+    @NonNull private String licensesSalt;
+    
+    /**
+     * The salt to use for hashing IP addresses.
+     */
+    @Value("${salts.ips}")
+    @NonNull private String ipsSalt;
     
     @Autowired
     public LicenseService(@NonNull LicenseRepository repository) {
@@ -68,7 +73,7 @@ public final class LicenseService {
                           String description, int ipLimit, int hwidLimit) {
         // Create the new license
         License license = new License();
-        license.setKey(BCrypt.hashpw(key, keySalt)); // Hash the key
+        license.setKey(BCrypt.hashpw(key, licensesSalt)); // Hash the key
         license.setProduct(product); // Use the given product
         license.setDescription(description); // Use the given description, if any
         license.setIps(new HashSet<>());
@@ -92,13 +97,13 @@ public final class LicenseService {
      */
     public void check(@NonNull String key, @NonNull String product,
                       @NonNull String ip, @NonNull String hwid) throws APIException {
-        Optional<License> optionalLicense = repository.getLicense(BCrypt.hashpw(key, keySalt), product); // Get the license
+        Optional<License> optionalLicense = repository.getLicense(BCrypt.hashpw(key, licensesSalt), product); // Get the license
         if (optionalLicense.isEmpty()) { // License key not found
             log.error("License key {} for product {} not found", key, product); // Log the error
             throw new LicenseNotFoundException();
         }
         License license = optionalLicense.get(); // The license found
-        license.use(ip, hwid); // Use the license
+        license.use(ip, ipsSalt, hwid); // Use the license
         repository.save(license); // Save the used license
         log.info("License key {} for product {} was used by {} ({})", key, product, ip, hwid);
     }

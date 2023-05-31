@@ -7,6 +7,7 @@ import lombok.ToString;
 import me.braydon.license.exception.APIException;
 import me.braydon.license.exception.LicenseHwidLimitExceededException;
 import me.braydon.license.exception.LicenseIpLimitExceededException;
+import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -45,9 +46,6 @@ public class License {
     
     /**
      * The IPs used on this license.
-     * <p>
-     * These IPs are encrypted using AES-256.
-     * </p>
      */
     private Set<String> ips;
     
@@ -79,19 +77,24 @@ public class License {
     /**
      * Invoked when this license is used.
      *
-     * @param ip   the ip used
-     * @param hwid the hardware id used
+     * @param ip     the ip used
+     * @param ipSalt the IP salt to use
+     * @param hwid   the hardware id used
      */
-    public void use(@NonNull String ip, @NonNull String hwid) throws APIException {
-        if (!ips.contains(ip) && ips.size() >= ipLimit) { // IP limit has been exceeded
+    public void use(@NonNull String ip, @NonNull String ipSalt, @NonNull String hwid) throws APIException {
+        String hashedIp = BCrypt.hashpw(ip, ipSalt); // Hash the IP
+        
+        // IP limit has been exceeded
+        if (!ips.contains(hashedIp) && ips.size() >= ipLimit) {
             throw new LicenseIpLimitExceededException();
         }
-        if (!hwids.contains(hwid) && hwids.size() >= hwidLimit) { // HWID limit has been exceeded
+        // HWID limit has been exceeded
+        if (!hwids.contains(hwid) && hwids.size() >= hwidLimit) {
             throw new LicenseHwidLimitExceededException();
         }
         // The license was used
         uses++; // Increment uses
-        ips.add(ip); // Add the used IP
+        ips.add(hashedIp); // Add the used IP
         hwids.add(hwid); // Add the used HWID
         lastUsed = new Date(); // Last used now
     }
