@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.NonNull;
 import me.braydon.license.LicenseServer;
+import me.braydon.license.dto.LicenseDTO;
 import me.braydon.license.exception.APIException;
 import me.braydon.license.model.License;
 import me.braydon.license.service.LicenseService;
@@ -56,13 +57,17 @@ public final class LicenseController {
                 throw new APIException(HttpStatus.BAD_REQUEST, "Invalid request body");
             }
             // Check the license
-            service.check(
+            License license = service.check(
                 key.getAsString(),
                 product.getAsString(),
                 ip,
                 hwid.getAsString()
             );
-            return ResponseEntity.ok().build(); // Return OK
+            // Return OK with the license DTO
+            return ResponseEntity.ok(new LicenseDTO(
+                license.getDescription(),
+                license.getDuration()
+            ));
         } catch (APIException ex) { // Handle the exception
             return ResponseEntity.status(ex.getStatus())
                        .body(Map.of("error", ex.getLocalizedMessage()));

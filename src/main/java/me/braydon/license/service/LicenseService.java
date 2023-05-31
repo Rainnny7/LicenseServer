@@ -95,11 +95,13 @@ public final class LicenseService {
      * @param product the product of the license
      * @param ip      the ip using the license
      * @param hwid    the hwid using the license
+     * @return the checked license
      * @throws APIException if there was an error checking the license
      * @see License for license
      */
-    public void check(@NonNull String key, @NonNull String product,
-                      @NonNull String ip, @NonNull String hwid) throws APIException {
+    @NonNull
+    public License check(@NonNull String key, @NonNull String product,
+                         @NonNull String ip, @NonNull String hwid) throws APIException {
         Optional<License> optionalLicense = repository.getLicense(BCrypt.hashpw(key, licensesSalt), product); // Get the license
         if (optionalLicense.isEmpty()) { // License key not found
             log.error("License key {} for product {} not found", key, product); // Log the error
@@ -112,5 +114,6 @@ public final class LicenseService {
         license.use(ip, ipsSalt, hwid); // Use the license
         repository.save(license); // Save the used license
         log.info("License key {} for product {} was used by {} ({})", key, product, ip, hwid);
+        return license;
     }
 }
