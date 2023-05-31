@@ -4,6 +4,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import me.braydon.license.exception.APIException;
+import me.braydon.license.exception.LicenseExpiredException;
 import me.braydon.license.exception.LicenseNotFoundException;
 import me.braydon.license.model.License;
 import me.braydon.license.repository.LicenseRepository;
@@ -66,11 +67,12 @@ public final class LicenseService {
      * @param description the optional description of the license
      * @param ipLimit     the IP limit of the license
      * @param hwidLimit   the HWID limit of the license
+     * @param duration    the duration of the license, -1 for permanent
      * @return the created license
      * @see License for license
      */
-    public License create(@NonNull String key, @NonNull String product,
-                          String description, int ipLimit, int hwidLimit) {
+    public License create(@NonNull String key, @NonNull String product, String description,
+                          int ipLimit, int hwidLimit, long duration) {
         // Create the new license
         License license = new License();
         license.setKey(BCrypt.hashpw(key, licensesSalt)); // Hash the key
@@ -80,6 +82,7 @@ public final class LicenseService {
         license.setHwids(new HashSet<>());
         license.setIpLimit(ipLimit); // Use the given IP limit
         license.setHwidLimit(hwidLimit); // Use the given HWID limit
+        license.setDuration(duration);
         license.setCreated(new Date());
         repository.insert(license); // Insert the newly created license
         return license;
@@ -103,6 +106,9 @@ public final class LicenseService {
             throw new LicenseNotFoundException();
         }
         License license = optionalLicense.get(); // The license found
+        if (license.hasExpired()) { // The license has expired
+            throw new LicenseExpiredException();
+        }
         license.use(ip, ipsSalt, hwid); // Use the license
         repository.save(license); // Save the used license
         log.info("License key {} for product {} was used by {} ({})", key, product, ip, hwid);
