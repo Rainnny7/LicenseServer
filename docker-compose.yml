@@ -3,6 +3,6 @@ services:
   app:
     image: git.rainnny.club/rainnny/licenseserver:latest
     volumes:
-      - ./data:/app
+      - ./data:/usr/local/app
     ports:
-      - 7500:7500
+      - "7500:7500"
