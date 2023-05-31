@@ -4,7 +4,7 @@ COPY pom.xml .
 COPY src ./src
 RUN mvn clean package -T12
 
-FROM openjdk:17-jdk-slim
+FROM adoptopenjdk:17-jre-hotspot
 WORKDIR /usr/local/app
 COPY --from=builder /app/target/LicenseServer.jar .
 EXPOSE 7500
