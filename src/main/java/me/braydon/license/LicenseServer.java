@@ -2,9 +2,11 @@ package me.braydon.license;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import jakarta.annotation.PostConstruct;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -35,5 +37,11 @@ public class LicenseServer {
         }
         log.info("Found configuration at '{}'", config.getAbsolutePath()); // Log the found config
         SpringApplication.run(LicenseServer.class, args); // Load the application
+    }
+    
+    @PostConstruct
+    public void onInitialize() {
+        // Log a randomly generated salt
+        log.info("Generated a random salt: {} (This is only for you to copy and paste for config)", BCrypt.gensalt());
     }
 }

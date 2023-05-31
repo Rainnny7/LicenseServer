@@ -51,12 +51,12 @@ public final class LicenseService {
     public void onInitialize() {
         // TODO: remove this and make it either
         //  a test, or a route to gen a license
-        System.out.println("SALT - " + BCrypt.gensalt());
-        //        String key = RandomUtils.generateLicenseKey();
-        //        log.info(create(key,
-        //            "CloudSpigot",
-        //            "Testing " + Math.random(), Integer.MAX_VALUE, Integer.MAX_VALUE).toString());
-        //        System.out.println("key = " + key);
+        
+        // String key = RandomUtils.generateLicenseKey();
+        // log.info(create(key,
+        //     "CloudSpigot",
+        //     "Testing " + Math.random(), Integer.MAX_VALUE, Integer.MAX_VALUE).toString());
+        // System.out.println("key = " + key);
     }
     
     /**
