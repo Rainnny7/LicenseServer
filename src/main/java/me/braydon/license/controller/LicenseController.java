@@ -1,0 +1,59 @@
+package me.braydon.license.controller;
+
+import com.google.gson.JsonObject;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.NonNull;
+import me.braydon.license.LicenseServer;
+import me.braydon.license.exception.APIException;
+import me.braydon.license.model.License;
+import me.braydon.license.service.LicenseService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+/**
+ * @author Braydon
+ */
+@RestController
+@RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON_VALUE)
+public final class LicenseController {
+    /**
+     * The {@link LicenseService} to use.
+     */
+    @NonNull private final LicenseService service;
+    
+    @Autowired
+    public LicenseController(@NonNull LicenseService service) {
+        this.service = service;
+    }
+    
+    /**
+     * This route handle checking of licenses.
+     *
+     * @param body the body of the request
+     * @return the response entity
+     * @see License for license
+     * @see ResponseEntity for response entity
+     */
+    @GetMapping("/check")
+    @ResponseBody
+    public ResponseEntity<?> check(@NonNull HttpServletRequest request, @RequestBody @NonNull String body) {
+        try { // Attempt to check the license
+            String ip = request.getRemoteAddr(); // The IP of the requester
+            
+            JsonObject jsonObject = LicenseServer.GSON.fromJson(body, JsonObject.class);
+            String key = jsonObject.get("key").getAsString(); // Get the key
+            String product = jsonObject.get("product").getAsString(); // Get the product
+            String hwid = jsonObject.get("hwid").getAsString(); // Get the hwid
+            
+            service.check(key, product, ip, hwid); // Check the license
+            return ResponseEntity.ok().build(); // Return OK
+        } catch (APIException ex) { // Handle the exception
+            return ResponseEntity.status(ex.getStatus())
+                       .body(Map.of("error", ex.getLocalizedMessage()));
+        }
+    }
+}

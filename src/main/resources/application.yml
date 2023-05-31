@@ -1,0 +1,27 @@
+# Server Configuration
+server:
+  address: 0.0.0.0
+  port: 7500
+
+# The salt to use when hashing license keys.
+# This salt should be changed from the default.
+key-salt: "$2a$10$/nQyzQDMkCf97ZlJLLWa3O"
+
+# Log Configuration
+logging:
+  file:
+    path: "./logs"
+
+# Spring Configuration
+spring:
+  data:
+    # MongoDB - This is used to store persistent data
+    mongodb:
+      uri: "mongodb://licenseServer:p4$$w0rd@127.0.0.1:27017/licenseServer?authSource=admin"
+      auto-index-creation: true # Automatically create collection indexes
+
+  # Ignore
+  application:
+    name: "License Server"
+  banner:
+    location: "classpath:banner.txt"
