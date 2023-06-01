@@ -7,7 +7,7 @@ A simple open-source licensing server for your products.
 ### Check License
 
 ```http
-  POST /check
+POST /check
 ```
 
 #### Body
