@@ -42,7 +42,7 @@ public final class LicenseController {
      * @see License for license
      * @see ResponseEntity for response entity
      */
-    @GetMapping("/check")
+    @PostMapping("/check")
     @ResponseBody
     public ResponseEntity<?> check(@NonNull HttpServletRequest request, @RequestBody @NonNull String body) {
         try { // Attempt to check the license
