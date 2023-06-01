@@ -40,6 +40,22 @@ public class License {
     private String description;
     
     /**
+     * The Discord snowflake of the owner of this license.
+     * <p>
+     * If this is -1, the license is not owned by anyone.
+     * </p>
+     */
+    private long ownerSnowflake;
+    
+    /**
+     * The Discord name of the owner of this license.
+     * <p>
+     * If this is null, the license is not owned by anyone.
+     * </p>
+     */
+    private String ownerName;
+    
+    /**
      * The amount of uses this license has.
      */
     private int uses;

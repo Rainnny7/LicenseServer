@@ -1,6 +1,5 @@
 package me.braydon.license.service;
 
-import jakarta.annotation.PostConstruct;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import me.braydon.license.common.MiscUtils;
@@ -54,37 +53,29 @@ public final class LicenseService {
         this.discordService = discordService;
     }
     
-    @PostConstruct
-    public void onInitialize() {
-        // TODO: remove this and make it either
-        //  a test, or a route to gen a license
-        
-        // String key = RandomUtils.generateLicenseKey();
-        // log.info(create(key,
-        //     "CloudSpigot",
-        //     "Testing " + Math.random(), Integer.MAX_VALUE, Integer.MAX_VALUE).toString());
-        // System.out.println("key = " + key);
-    }
-    
     /**
      * Create a new license key.
      *
-     * @param key         the key of the license
-     * @param product     the product the license is for
-     * @param description the optional description of the license
-     * @param ipLimit     the IP limit of the license
-     * @param hwidLimit   the HWID limit of the license
-     * @param duration    the duration of the license, -1 for permanent
+     * @param key            the key of the license
+     * @param product        the product the license is for
+     * @param description    the optional description of the license
+     * @param ownerSnowflake the optional owner snowflake of the license
+     * @param ownerName      the optional owner name of the license
+     * @param ipLimit        the IP limit of the license
+     * @param hwidLimit      the HWID limit of the license
+     * @param duration       the duration of the license, -1 for permanent
      * @return the created license
      * @see License for license
      */
-    public License create(@NonNull String key, @NonNull String product, String description,
-                          int ipLimit, int hwidLimit, long duration) {
+    public License create(@NonNull String key, @NonNull String product, String description, long ownerSnowflake,
+                          String ownerName, int ipLimit, int hwidLimit, long duration) {
         // Create the new license
         License license = new License();
         license.setKey(BCrypt.hashpw(key, licensesSalt)); // Hash the key
         license.setProduct(product); // Use the given product
         license.setDescription(description); // Use the given description, if any
+        license.setOwnerSnowflake(ownerSnowflake);
+        license.setOwnerName(ownerName);
         license.setIps(new HashSet<>());
         license.setHwids(new HashSet<>());
         license.setIpLimit(ipLimit); // Use the given IP limit
@@ -136,7 +127,11 @@ public final class LicenseService {
                                            true
                                        )
                                        .addField("Owner ID",
-                                           "504147739131641857",
+                                           license.getOwnerSnowflake() <= 0L ? "N/A" : String.valueOf(license.getOwnerSnowflake()),
+                                           true
+                                       )
+                                       .addField("Owner Name",
+                                           license.getOwnerName() == null ? "N/A" : license.getOwnerName(),
                                            true
                                        )
                                        .addField("Expires",
