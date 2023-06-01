@@ -3,16 +3,17 @@ package me.braydon.license.service;
 import jakarta.annotation.PostConstruct;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import me.braydon.license.exception.APIException;
-import me.braydon.license.exception.LicenseExpiredException;
-import me.braydon.license.exception.LicenseNotFoundException;
+import me.braydon.license.common.MiscUtils;
+import me.braydon.license.exception.*;
 import me.braydon.license.model.License;
 import me.braydon.license.repository.LicenseRepository;
+import net.dv8tion.jda.api.EmbedBuilder;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.awt.*;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Optional;
@@ -31,6 +32,11 @@ public final class LicenseService {
     @NonNull private final LicenseRepository repository;
     
     /**
+     * The {@link DiscordService} to use for logging.
+     */
+    @NonNull private final DiscordService discordService;
+    
+    /**
      * The salt to use for hashing license keys.
      */
     @Value("${salts.licenses}")
@@ -43,8 +49,9 @@ public final class LicenseService {
     @NonNull private String ipsSalt;
     
     @Autowired
-    public LicenseService(@NonNull LicenseRepository repository) {
+    public LicenseService(@NonNull LicenseRepository repository, @NonNull DiscordService discordService) {
         this.repository = repository;
+        this.discordService = discordService;
     }
     
     @PostConstruct
@@ -100,20 +107,99 @@ public final class LicenseService {
      * @see License for license
      */
     @NonNull
-    public License check(@NonNull String key, @NonNull String product,
-                         @NonNull String ip, @NonNull String hwid) throws APIException {
+    public License check(@NonNull String key, @NonNull String product, @NonNull String ip,
+                         @NonNull String hwid) throws APIException {
         Optional<License> optionalLicense = repository.getLicense(BCrypt.hashpw(key, licensesSalt), product); // Get the license
         if (optionalLicense.isEmpty()) { // License key not found
             log.error("License key {} for product {} not found", key, product); // Log the error
             throw new LicenseNotFoundException();
         }
         License license = optionalLicense.get(); // The license found
-        if (license.hasExpired()) { // The license has expired
+        
+        // Log the license being used, if enabled
+        if (discordService.isLogUses()) {
+            // god i hate sending discord embeds, it's so big and ugly :(
+            long expirationDate = (license.getCreated().getTime() + license.getDuration()) / 1000L;
+            discordService.sendLog(new EmbedBuilder()
+                                       .setColor(Color.BLUE)
+                                       .setTitle("License Used")
+                                       .addField("License",
+                                           "`" + MiscUtils.obfuscateKey(key) + "`",
+                                           true
+                                       )
+                                       .addField("Product",
+                                           license.getProduct(),
+                                           true
+                                       )
+                                       .addField("Description",
+                                           license.getDescription(),
+                                           true
+                                       )
+                                       .addField("Owner ID",
+                                           "504147739131641857",
+                                           true
+                                       )
+                                       .addField("Expires",
+                                           license.isPermanent() ? "Never" : "<t:" + expirationDate + ":R>",
+                                           true
+                                       )
+                                       .addField("IP",
+                                           ip,
+                                           true
+                                       )
+                                       .addField("HWID",
+                                           "```" + hwid + "```",
+                                           false
+                                       )
+                                       .addField("IPs",
+                                           license.getIps().size() + "/" + license.getIpLimit(),
+                                           true
+                                       )
+                                       .addField("HWIDs",
+                                           license.getHwids().size() + "/" + license.getHwidLimit(),
+                                           true
+                                       )
+            );
+        }
+        // The license has expired
+        if (license.hasExpired()) {
+            // Log the expired license
+            if (discordService.isLogExpired()) {
+                discordService.sendLog(new EmbedBuilder()
+                                           .setColor(Color.RED)
+                                           .setTitle("License Expired")
+                                           .setDescription("License `%s` is expired".formatted(MiscUtils.obfuscateKey(key)))
+                );
+            }
             throw new LicenseExpiredException();
         }
-        license.use(ip, ipsSalt, hwid); // Use the license
-        repository.save(license); // Save the used license
-        log.info("License key {} for product {} was used by {} ({})", key, product, ip, hwid);
-        return license;
+        try {
+            license.use(ip, ipsSalt, hwid); // Use the license
+            repository.save(license); // Save the used license
+            log.info("License key {} for product {} was used by {} ({})", key, product, ip, hwid);
+            return license;
+        } catch (APIException ex) {
+            // Log that the license has reached it's IP limit
+            if (ex instanceof LicenseIpLimitExceededException && discordService.isLogIpLimitExceeded()) {
+                discordService.sendLog(new EmbedBuilder()
+                                           .setColor(Color.RED)
+                                           .setTitle("License IP Limit Reached")
+                                           .setDescription("License `%s` has reached it's IP limit: **%s**".formatted(
+                                               MiscUtils.obfuscateKey(key),
+                                               license.getIpLimit()
+                                           ))
+                );
+            } else if (ex instanceof LicenseHwidLimitExceededException && discordService.isLogHwidLimitExceeded()) {
+                discordService.sendLog(new EmbedBuilder()
+                                           .setColor(Color.RED)
+                                           .setTitle("License HWID Limit Reached")
+                                           .setDescription("License `%s` has reached it's HWID limit: **%s**".formatted(
+                                               MiscUtils.obfuscateKey(key),
+                                               license.getHwidLimit()
+                                           ))
+                );
+            }
+            throw ex; // Rethrow to handle where this method was invoked
+        }
     }
 }

@@ -9,6 +9,16 @@ salts:
   licenses: "$2a$10$/nQyzQDMkCf97ZlJLLWa3O"
   ips: "$2a$10$Xus.AHTCas97Ofx0tFs85O"
 
+# Discord Bot Configuration
+discord:
+  token: ""
+  logs:
+    channel: 0 # The channel ID to log to, leave as 0 to disable
+    uses: true # Should used licenses be logged?
+    expired: true # Should we log if an expired license was used?
+    ipLimitExceeded: true # Should IP limited licenses be logged when used?
+    hwidLimitExceeded: true # Should HWID limited licenses be logged when used?
+
 # Log Configuration
 logging:
   file:
@@ -16,14 +26,16 @@ logging:
 
 # Spring Configuration
 spring:
+  application:
+    name: "License Server"
+
+  # Database Configuration
   data:
     # MongoDB - This is used to store persistent data
     mongodb:
       uri: "mongodb://licenseServer:p4$$w0rd@127.0.0.1:27017/licenseServer?authSource=admin"
       auto-index-creation: true # Automatically create collection indexes
 
-  # Ignore
-  application:
-    name: "License Server"
+  # Banner
   banner:
     location: "classpath:banner.txt"
