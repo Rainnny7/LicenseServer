@@ -22,7 +22,7 @@ import org.springframework.stereotype.Service;
  * @author Braydon
  */
 @Service
-@Slf4j
+@Slf4j(topic = "Discord")
 public final class DiscordService {
     /**
      * The version of this Springboot application.

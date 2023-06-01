@@ -24,7 +24,7 @@ import java.util.Optional;
  * @author Braydon
  */
 @Service
-@Slf4j
+@Slf4j(topic = "Licenses")
 public final class LicenseService {
     /**
      * The {@link LicenseRepository} to use.

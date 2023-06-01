@@ -19,7 +19,7 @@ import java.util.Objects;
  * @author Braydon
  */
 @SpringBootApplication
-@Slf4j
+@Slf4j(topic = "License Server")
 public class LicenseServer {
     public static final Gson GSON = new GsonBuilder()
                                         .serializeNulls()
