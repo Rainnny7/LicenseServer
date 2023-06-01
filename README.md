@@ -18,6 +18,27 @@ POST /check
 | `product` | `string` | **Required**. The product the license is for   |
 | `hwid`    | `string` | **Required**. The hardware id of the requester |
 
+#### Response
+
+##### Error
+
+```json
+{
+  "error": "Error message"
+}
+```
+
+##### Success
+
+```json
+{
+  "description": "Testing",
+  "ownerSnowflake": 504147739131641857,
+  "ownerName": "Braydon#2712",
+  "duration": -1
+}
+```
+
 ## Deployment
 
 ### Docker
