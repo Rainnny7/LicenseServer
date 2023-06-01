@@ -2,6 +2,10 @@
 
 A simple open-source licensing server for your products.
 
+## Discord Preview
+
+![License Usage Log](https://cdn.rainnny.club/SagsCD0I.png)
+
 ## API Reference
 
 ### Check License
