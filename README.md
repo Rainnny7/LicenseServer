@@ -1,3 +1,40 @@
 # LicenseServer
 
 A simple open-source licensing server for your products.
+
+## API Reference
+
+### Check License
+
+```http
+  POST /check
+```
+
+#### Body
+
+| Key       | Type     | Description                                    |
+|:----------|:---------|:-----------------------------------------------|
+| `key`     | `string` | **Required**. Your license key                 |
+| `product` | `string` | **Required**. The product the license is for   |
+| `hwid`    | `string` | **Required**. The hardware id of the requester |
+
+## Deployment
+
+### Docker
+
+```bash
+docker run -d -p 7500:7500 -v "$(pwd)/data:/usr/local/app" git.rainnny.club/rainnny/licenseserver:latest  
+```
+
+### Docker Compose
+
+```yml
+version: '3'
+services:
+  app:
+    image: git.rainnny.club/rainnny/licenseserver:latest
+    volumes:
+      - ./data:/usr/local/app
+    ports:
+      - "7500:7500"
+```
