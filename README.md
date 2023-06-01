@@ -48,7 +48,7 @@ POST /check
 ### Docker
 
 ```bash
-docker run -d -p 7500:7500 -v "$(pwd)/data:/usr/local/app" git.rainnny.club/rainnny/licenseserver:latest  
+docker run -d -p 7500:7500 -v "$(pwd)/data/application.yml:/usr/local/app/application.yml" git.rainnny.club/rainnny/licenseserver:latest  
 ```
 
 ### Docker Compose
@@ -59,7 +59,7 @@ services:
   app:
     image: git.rainnny.club/rainnny/licenseserver:latest
     volumes:
-      - ./data:/usr/local/app
+      - ./data/application.yml:/usr/local/app/application.yml
     ports:
       - "7500:7500"
 ```
