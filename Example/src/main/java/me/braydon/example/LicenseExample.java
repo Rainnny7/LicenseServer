@@ -45,6 +45,15 @@ public final class LicenseExample {
                                          .serializeNulls()
                                          .create();
     
+    /**
+     * Check the license with the given
+     * key for the given product.
+     *
+     * @param key     the key to check
+     * @param product the product the key belongs to
+     * @return the license response
+     * @see LicenseResponse for response
+     */
     @NonNull
     public static LicenseResponse check(@NonNull String key, @NonNull String product) {
         String hardwareId = getHardwareId(); // Get the machine's hardware id
