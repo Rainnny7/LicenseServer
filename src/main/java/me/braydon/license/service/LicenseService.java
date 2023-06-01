@@ -106,14 +106,29 @@ public final class LicenseService {
             throw new LicenseNotFoundException();
         }
         License license = optionalLicense.get(); // The license found
+        String hashedIp = BCrypt.hashpw(ip, ipsSalt); // Hash the IP
         
         // Log the license being used, if enabled
         if (discordService.isLogUses()) {
             // god i hate sending discord embeds, it's so big and ugly :(
+            boolean newIp = !license.getIps().contains(hashedIp); // If the IP is new
+            boolean newHwid = !license.getHwids().contains(hwid);
+            
+            // Constructing tags
+            StringBuilder tags = new StringBuilder();
+            if (newIp) { // New IP
+                tags.append("New IP");
+            }
+            if (newHwid) { // New HWID
+                if (tags.length() > 0) {
+                    tags.append(" & ");
+                }
+                tags.append("New HWID");
+            }
             long expirationDate = (license.getCreated().getTime() + license.getDuration()) / 1000L;
             discordService.sendLog(new EmbedBuilder()
                                        .setColor(Color.BLUE)
-                                       .setTitle("License Used")
+                                       .setTitle("License Used" + (!tags.isEmpty() ? " (" + tags + ")" : ""))
                                        .addField("License",
                                            "`" + MiscUtils.obfuscateKey(key) + "`",
                                            true
@@ -169,7 +184,7 @@ public final class LicenseService {
             throw new LicenseExpiredException();
         }
         try {
-            license.use(ip, ipsSalt, hwid); // Use the license
+            license.use(hashedIp, hwid); // Use the license
             repository.save(license); // Save the used license
             log.info("License key {} for product {} was used by {} ({})", key, product, ip, hwid);
             return license;

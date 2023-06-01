@@ -7,7 +7,6 @@ import lombok.ToString;
 import me.braydon.license.exception.APIException;
 import me.braydon.license.exception.LicenseHwidLimitExceededException;
 import me.braydon.license.exception.LicenseIpLimitExceededException;
-import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -129,13 +128,10 @@ public class License {
     /**
      * Invoked when this license is used.
      *
-     * @param ip     the ip used
-     * @param ipSalt the IP salt to use
-     * @param hwid   the hardware id used
+     * @param hashedIp the hashed ip used
+     * @param hwid     the hardware id used
      */
-    public void use(@NonNull String ip, @NonNull String ipSalt, @NonNull String hwid) throws APIException {
-        String hashedIp = BCrypt.hashpw(ip, ipSalt); // Hash the IP
-        
+    public void use(@NonNull String hashedIp, @NonNull String hwid) throws APIException {
         // IP limit has been exceeded
         if (!ips.contains(hashedIp) && ips.size() >= ipLimit) {
             throw new LicenseIpLimitExceededException();
