@@ -111,8 +111,8 @@ public final class LicenseService {
         // Log the license being used, if enabled
         if (discordService.isLogUses()) {
             // god i hate sending discord embeds, it's so big and ugly :(
-            boolean newIp = !license.getIps().contains(hashedIp); // If the IP is new
-            boolean newHwid = !license.getHwids().contains(hwid);
+            boolean newIp = !license.getIps().contains(hashedIp); // Is the IP new?
+            boolean newHwid = !license.getHwids().contains(hwid); // Is the HWID new?
             
             // Constructing tags
             StringBuilder tags = new StringBuilder();
@@ -123,7 +123,7 @@ public final class LicenseService {
                 if (tags.length() > 0) {
                     tags.append(" & ");
                 }
-                tags.append("New HWID");
+                tags.append("HWID");
             }
             long expirationDate = (license.getCreated().getTime() + license.getDuration()) / 1000L;
             discordService.sendLog(new EmbedBuilder()
