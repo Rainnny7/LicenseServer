@@ -186,7 +186,7 @@ public final class LicenseService {
         try {
             license.use(hashedIp, hwid); // Use the license
             repository.save(license); // Save the used license
-            log.info("License key {} for product {} was used by {} ({})", key, product, ip, hwid);
+            log.info("License key '{}' for product '{}' was used by {} (HWID: {})", key, product, ip, hwid);
             return license;
         } catch (APIException ex) {
             // Log that the license has reached it's IP limit
