@@ -8,16 +8,14 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.ToString;
+import okhttp3.*;
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.ComputerSystem;
 import oshi.hardware.HardwareAbstractionLayer;
 import oshi.software.os.OperatingSystem;
 
-import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,7 +28,6 @@ import java.util.Map;
  *
  * @author Braydon
  * @see <a href="https://git.rainnny.club/Rainnny/LicenseServer">License Server</a>
- * TODO: Convert to okhttp?
  */
 public final class LicenseExample {
     /**
@@ -56,88 +53,67 @@ public final class LicenseExample {
      */
     @NonNull
     public static LicenseResponse check(@NonNull String key, @NonNull String product) {
-        String hardwareId = getHardwareId(); // Get the machine's hardware id
+        String hardwareId = getHardwareId(); // Get the hardware id of the machine
         
-        // Build the body
+        // Build the json body
         Map<String, Object> body = new HashMap<>();
         body.put("key", key);
         body.put("product", product);
         body.put("hwid", hardwareId);
         String bodyJson = GSON.toJson(body); // The json body
         
-        HttpURLConnection connection = null;
-        int responseCode = -1; // The response code
-        try {
-            // Try and send the request to the server
-            connection = (HttpURLConnection) new URL(CHECK_ENDPOINT).openConnection();
-            connection.setRequestMethod("POST"); // Sending a POST request
-            connection.setRequestProperty("Content-Type", "application/json"); // We want JSON as the response
-            connection.setDoOutput(true); // We want to send a body
+        OkHttpClient client = new OkHttpClient(); // Create a new http client
+        MediaType mediaType = MediaType.parse("application/json"); // Ensure the media type is json
+        RequestBody requestBody = RequestBody.create(bodyJson, mediaType); // Build the request body
+        Request request = new Request.Builder()
+                              .url(CHECK_ENDPOINT)
+                              .post(requestBody)
+                              .build(); // Build the POST request
+        
+        Response response = null; // The response of the request
+        int responseCode = -1; // The response code of the request
+        try { // Attempt to execute the request
+            response = client.newCall(request).execute();
+            responseCode = response.code();
             
-            // Write the body to the connection
-            try (OutputStream outputStream = connection.getOutputStream()) {
-                byte[] input = bodyJson.getBytes(StandardCharsets.UTF_8);
-                outputStream.write(input, 0, input.length);
-            }
-            responseCode = connection.getResponseCode(); // Get the response code
-            
-            // If the response code is OK, we can read the response
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                try (InputStream inputStream = connection.getInputStream();
-                     InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-                     BufferedReader reader = new BufferedReader(inputStreamReader)
-                ) {
-                    // Read the response
-                    StringBuilder response = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        response.append(line);
-                    }
-                    // Parse the response as JSON
-                    JsonObject json = GSON.fromJson(response.toString(), JsonObject.class);
-                    JsonElement description = json.get("description");
-                    JsonElement ownerSnowflake = json.get("ownerSnowflake");
-                    JsonElement ownerName = json.get("ownerName");
-                    JsonElement duration = json.get("duration");
-                    return new LicenseResponse(200, null,
-                        description.isJsonNull() ? null : description.getAsString(),
-                        ownerSnowflake.isJsonNull() ? -1 : ownerSnowflake.getAsLong(),
-                        ownerName.isJsonNull() ? null : ownerName.getAsString(),
-                        duration.isJsonNull() ? -1 : duration.getAsLong()
-                    );
-                }
-            } else { // Otherwise, the request failed
-                // Check if the response has an error message in JSON format
-                try (InputStream errorStream = connection.getErrorStream()) {
-                    if (errorStream != null) { // Read the error response
-                        try (InputStreamReader errorStreamReader = new InputStreamReader(errorStream);
-                             BufferedReader errorReader = new BufferedReader(errorStreamReader)
-                        ) {
-                            
-                            StringBuilder errorResponse = new StringBuilder();
-                            String errorLine;
-                            while ((errorLine = errorReader.readLine()) != null) {
-                                errorResponse.append(errorLine);
-                            }
-                            // Parse the error response as JSON
-                            JsonObject jsonError = GSON.fromJson(errorResponse.toString(), JsonObject.class);
-                            JsonElement errorMessage = jsonError.get("error");
-                            if (!errorMessage.isJsonNull()) { // If the error message isn't null, we can return it
-                                return new LicenseResponse(responseCode, errorMessage.getAsString());
-                            }
-                        }
+            // If the response is successful, we can parse the response
+            if (response.isSuccessful()) {
+                ResponseBody responseBody = response.body();
+                assert responseBody != null; // We don't want the response body being null
+                
+                JsonObject json = GSON.fromJson(responseBody.string(), JsonObject.class); // Parse the json
+                JsonElement description = json.get("description");
+                JsonElement ownerSnowflake = json.get("ownerSnowflake");
+                JsonElement ownerName = json.get("ownerName");
+                JsonElement duration = json.get("duration");
+                
+                // Return the license response
+                return new LicenseResponse(200, null,
+                    description.isJsonNull() ? null : description.getAsString(),
+                    ownerSnowflake.isJsonNull() ? -1 : ownerSnowflake.getAsLong(),
+                    ownerName.isJsonNull() ? null : ownerName.getAsString(),
+                    duration.isJsonNull() ? -1 : duration.getAsLong()
+                );
+            } else {
+                ResponseBody errorBody = response.body(); // Get the error body
+                if (errorBody != null) { // If we have an error body, we can parse it
+                    String errorResponse = errorBody.string();
+                    JsonObject jsonError = GSON.fromJson(errorResponse, JsonObject.class);
+                    JsonElement errorMessage = jsonError.get("error");
+                    if (!errorMessage.isJsonNull()) { // We have an error message, return it
+                        return new LicenseResponse(responseCode, errorMessage.getAsString());
                     }
                 }
             }
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
-            // Close the connection if it's open
-            if (connection != null) {
-                connection.disconnect();
+            // Close the response if it's open
+            if (response != null) {
+                response.close();
             }
         }
-        // Didn't find an error message, return an unknown error
+        // Return an unknown error
         return new LicenseResponse(responseCode, "An unknown error occurred");
     }
     
