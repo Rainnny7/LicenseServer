@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.NonNull;
 import me.braydon.license.LicenseServer;
+import me.braydon.license.common.IPUtils;
 import me.braydon.license.dto.LicenseDTO;
 import me.braydon.license.exception.APIException;
 import me.braydon.license.model.License;
@@ -45,7 +46,7 @@ public final class LicenseController {
     @ResponseBody
     public ResponseEntity<?> check(@NonNull HttpServletRequest request, @RequestBody @NonNull String body) {
         try { // Attempt to check the license
-            String ip = request.getRemoteAddr(); // The IP of the requester
+            String ip = IPUtils.getRealIp(request); // The IP of the requester
             
             JsonObject jsonObject = LicenseServer.GSON.fromJson(body, JsonObject.class);
             JsonElement key = jsonObject.get("key"); // Get the key
@@ -56,6 +57,11 @@ public final class LicenseController {
             if (key.isJsonNull() || product.isJsonNull() || hwid.isJsonNull()) {
                 throw new APIException(HttpStatus.BAD_REQUEST, "Invalid request body");
             }
+            // Ensure the IP is valid
+            if (IPUtils.getIpType(ip) == -1) {
+                throw new APIException(HttpStatus.BAD_REQUEST, "Invalid IP address");
+            }
+            
             // Check the license
             License license = service.check(
                 key.getAsString(),
