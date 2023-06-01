@@ -72,6 +72,8 @@ public final class LicenseController {
             // Return OK with the license DTO
             return ResponseEntity.ok(new LicenseDTO(
                 license.getDescription(),
+                license.getOwnerSnowflake(),
+                license.getOwnerName(),
                 license.getDuration()
             ));
         } catch (APIException ex) { // Handle the exception
