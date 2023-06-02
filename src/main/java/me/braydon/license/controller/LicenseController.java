@@ -61,13 +61,26 @@ public final class LicenseController {
             if (IPUtils.getIpType(ip) == -1) {
                 throw new APIException(HttpStatus.BAD_REQUEST, "Invalid IP address");
             }
+            // Ensure the HWID is valid
+            // TODO: improve :)
+            String hwidString = hwid.getAsString();
+            boolean invalidHwid = true;
+            if (hwidString.contains("-")) {
+                int segments = hwidString.substring(0, hwidString.lastIndexOf("-")).split("-").length;
+                if (segments == 4) {
+                    invalidHwid = false;
+                }
+            }
+            if (invalidHwid) {
+                throw new APIException(HttpStatus.BAD_REQUEST, "Invalid HWID");
+            }
             
             // Check the license
             License license = service.check(
                 key.getAsString(),
                 product.getAsString(),
                 ip,
-                hwid.getAsString()
+                hwidString
             );
             // Return OK with the license DTO
             return ResponseEntity.ok(new LicenseDTO(
