@@ -40,7 +40,7 @@ POST /check
   "description": "Testing",
   "ownerSnowflake": 504147739131641857,
   "ownerName": "Braydon#2712",
-  "duration": -1
+  "expires": "2023-06-02T06:00:47.270+00:00"
 }
 ```
 
