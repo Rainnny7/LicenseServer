@@ -25,7 +25,6 @@ discord:
   owner-logs:
     newIp: true # Should new IPs be sent to the license owner?
     newHwid: true # Should new HWIDs be sent to the license owner?
-    expiringSoon: true # Should the license owner be notified when their license is about to expire?
 
 # Log Configuration
 logging:
