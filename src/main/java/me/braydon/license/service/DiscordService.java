@@ -151,7 +151,20 @@ public final class DiscordService {
         textChannel.sendMessageEmbeds(buildEmbed(embed)).queue();
     }
     
+    /**
+     * Send an embed to the owner
+     * of the given license.
+     *
+     * @param license the license
+     * @param embed   the embed to send
+     * @see License for license
+     * @see EmbedBuilder for embed
+     */
     public void sendOwnerLog(@NonNull License license, @NonNull EmbedBuilder embed) {
+        // JDA must be ready to send logs
+        if (!isReady()) {
+            return;
+        }
         // We need an owner for the license
         if (license.getOwnerSnowflake() <= 0L) {
             return;
