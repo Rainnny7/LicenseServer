@@ -87,12 +87,6 @@ public final class DiscordService {
     private boolean logNewHwidsToOwner;
     
     /**
-     * Should the license owner be notified when their license is about to expire?
-     */
-    @Value("${discord.owner-logs.expiringSoon}") @Getter
-    private boolean logExpiringSoonToOwner;
-    
-    /**
      * The {@link JDA} instance of the bot.
      */
     private JDA jda;
