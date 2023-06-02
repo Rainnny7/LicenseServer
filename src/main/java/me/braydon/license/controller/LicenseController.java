@@ -74,7 +74,7 @@ public final class LicenseController {
                 license.getDescription(),
                 license.getOwnerSnowflake(),
                 license.getOwnerName(),
-                license.getDuration()
+                license.getExpires()
             ));
         } catch (APIException ex) { // Handle the exception
             return ResponseEntity.status(ex.getStatus())

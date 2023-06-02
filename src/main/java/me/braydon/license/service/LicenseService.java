@@ -63,12 +63,12 @@ public final class LicenseService {
      * @param ownerName      the optional owner name of the license
      * @param ipLimit        the IP limit of the license
      * @param hwidLimit      the HWID limit of the license
-     * @param duration       the duration of the license, -1 for permanent
+     * @param expires        the optional expiration date of the license
      * @return the created license
      * @see License for license
      */
     public License create(@NonNull String key, @NonNull String product, String description, long ownerSnowflake,
-                          String ownerName, int ipLimit, int hwidLimit, long duration) {
+                          String ownerName, int ipLimit, int hwidLimit, Date expires) {
         // Create the new license
         License license = new License();
         license.setKey(BCrypt.hashpw(key, licensesSalt)); // Hash the key
@@ -80,7 +80,7 @@ public final class LicenseService {
         license.setHwids(new HashSet<>());
         license.setIpLimit(ipLimit); // Use the given IP limit
         license.setHwidLimit(hwidLimit); // Use the given HWID limit
-        license.setDuration(duration);
+        license.setExpires(expires);
         license.setCreated(new Date());
         repository.insert(license); // Insert the newly created license
         return license;
@@ -107,7 +107,7 @@ public final class LicenseService {
         }
         License license = optionalLicense.get(); // The license found
         String hashedIp = BCrypt.hashpw(ip, ipsSalt); // Hash the IP
-        String obfuscateKey = MiscUtils.obfuscateKey(key);
+        String obfuscateKey = MiscUtils.obfuscateKey(key); // Obfuscate the key
         boolean newIp = !license.getIps().contains(hashedIp); // Is the IP new?
         boolean newHwid = !license.getHwids().contains(hwid); // Is the HWID new?
         
@@ -126,7 +126,7 @@ public final class LicenseService {
                 }
                 tags.append("HWID");
             }
-            long expirationDate = (license.getCreated().getTime() + license.getDuration()) / 1000L;
+            long expires = license.isPermanent() ? -1L : license.getExpires().getTime() / 1000L;
             int ipCount = license.getIps().size();
             int hwidCount = license.getHwids().size();
             discordService.sendLog(new EmbedBuilder()
@@ -144,7 +144,7 @@ public final class LicenseService {
                                            true
                                        )
                                        .addField("Expires",
-                                           license.isPermanent() ? "Never" : "<t:" + expirationDate + ":R>",
+                                           expires == -1L ? "Never" : "<t:" + expires + ":R>",
                                            true
                                        )
                                        .addField("IP", ip, true)

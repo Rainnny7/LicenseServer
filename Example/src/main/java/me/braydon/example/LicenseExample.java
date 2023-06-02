@@ -16,6 +16,9 @@ import oshi.hardware.HardwareAbstractionLayer;
 import oshi.software.os.OperatingSystem;
 
 import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -85,14 +88,21 @@ public final class LicenseExample {
                 JsonElement description = json.get("description");
                 JsonElement ownerSnowflake = json.get("ownerSnowflake");
                 JsonElement ownerName = json.get("ownerName");
-                JsonElement duration = json.get("duration");
+                
+                // Parsing the expiration date if we have one
+                JsonElement expires = json.get("expires");
+                Date expiresDate = null;
+                if (!expires.isJsonNull()) {
+                    OffsetDateTime offsetDateTime = OffsetDateTime.parse(expires.getAsString(), DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+                    expiresDate = Date.from(offsetDateTime.toInstant());
+                }
                 
                 // Return the license response
                 return new LicenseResponse(200, null,
                     description.isJsonNull() ? null : description.getAsString(),
                     ownerSnowflake.isJsonNull() ? -1 : ownerSnowflake.getAsLong(),
                     ownerName.isJsonNull() ? null : ownerName.getAsString(),
-                    duration.isJsonNull() ? -1 : duration.getAsLong()
+                    expires.isJsonNull() ? null : expiresDate
                 );
             } else {
                 ResponseBody errorBody = response.body(); // Get the error body
@@ -177,12 +187,9 @@ public final class LicenseExample {
         private String ownerName;
         
         /**
-         * The duration of the license, present if valid.
-         * <p>
-         * If -1, the license will be permanent.
-         * </p>
+         * The optional expiration {@link Date} of the license.
          */
-        private long duration;
+        private Date expires;
         
         public LicenseResponse(long status, @NonNull String error) {
             this.status = status;
@@ -204,7 +211,7 @@ public final class LicenseExample {
          * @return true if permanent, otherwise false
          */
         public boolean isPermanent() {
-            return duration == -1;
+            return expires == null;
         }
     }
 }

@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.ToString;
 import me.braydon.license.model.License;
 
+import java.util.Date;
+
 /**
  * A data transfer object for a {@link License}.
  *
@@ -34,10 +36,7 @@ public class LicenseDTO {
     private String ownerName;
     
     /**
-     * The duration that this licensee is valid for.
-     * <p>
-     * If -1, the license will be permanent.
-     * </p>
+     * The optional expiration {@link Date} of this license.
      */
-    private long duration;
+    private Date expires;
 }

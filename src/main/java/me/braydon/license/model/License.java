@@ -80,12 +80,9 @@ public class License {
     private int hwidLimit;
     
     /**
-     * The duration that this licensee is valid for.
-     * <p>
-     * If -1, the license will be permanent.
-     * </p>
+     * The optional expiration {@link Date} of this license.
      */
-    private long duration;
+    private Date expires;
     
     /**
      * The {@link Date} this license was last used.
@@ -113,7 +110,7 @@ public class License {
             return false;
         }
         // Check if the license has expired
-        return System.currentTimeMillis() - created.getTime() >= duration;
+        return expires.before(new Date());
     }
     
     /**
@@ -122,7 +119,7 @@ public class License {
      * @return true if permanent, otherwise false
      */
     public boolean isPermanent() {
-        return duration == -1L;
+        return expires == null;
     }
     
     /**

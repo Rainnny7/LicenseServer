@@ -1,13 +1,11 @@
 package me.braydon.example;
 
-import java.util.concurrent.TimeUnit;
-
 /**
  * @author Braydon
  */
 public final class Main {
     public static void main(String[] args) {
-        LicenseExample.LicenseResponse response = LicenseExample.check("XXXX-XXXX-XXXX-XXXX", "Example");
+        LicenseExample.LicenseResponse response = LicenseExample.check("C45E-40F6-924C-753B", "CloudSpigot");
         if (!response.isValid()) { // License isn't valid
             System.err.println("Invalid license: " + response.getError());
             return;
@@ -22,9 +20,8 @@ public final class Main {
         }
         if (response.isPermanent()) { // License is permanent
             System.out.println("Your license is permanent");
-        } else { // License has a duration
-            long durationSeconds = TimeUnit.SECONDS.toMillis(response.getDuration()); // The duration in seconds
-            System.out.println("Your license will expire in " + durationSeconds + " seconds");
+        } else { // License has an expiration date
+            System.out.printf("Your license will expire at: %s%n", response.getExpires().toInstant());
         }
     }
 }
