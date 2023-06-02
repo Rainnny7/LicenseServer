@@ -171,33 +171,34 @@ public final class LicenseService {
             }
             throw new LicenseExpiredException();
         }
-        
-        // Sending new IP log to the license owner
-        if (newIp && discordService.isLogNewIpsToOwner()) {
-            discordService.sendOwnerLog(license, new EmbedBuilder()
-                                                     .setColor(0xF2781B)
-                                                     .setTitle("New IP")
-                                                     .setDescription("One of your licenses has been used on a new IP:")
-                                                     .addField("License", "`" + obfuscateKey + "`", true)
-                                                     .addField("Product", license.getProduct(), true)
-                                                     .addField("IP", "```" + ip + "```", false)
-            );
-        }
-        // Sending new HWID log to the license owner
-        if (newHwid && discordService.isLogNewHwidsToOwner()) {
-            discordService.sendOwnerLog(license, new EmbedBuilder()
-                                                     .setColor(0xF2781B)
-                                                     .setTitle("New HWID")
-                                                     .setDescription("One of your licenses has been used on a new HWID:")
-                                                     .addField("License", "`" + obfuscateKey + "`", true)
-                                                     .addField("Product", license.getProduct(), true)
-                                                     .addField("HWID", "```" + hwid + "```", false)
-            );
-        }
-        // Use the license
         try {
-            license.use(hashedIp, hwid);
+            license.use(hashedIp, hwid); // Use the license
             repository.save(license); // Save the used license
+            
+            // Sending new IP log to the license owner
+            if (newIp && discordService.isLogNewIpsToOwner()) {
+                discordService.sendOwnerLog(license, new EmbedBuilder()
+                                                         .setColor(0xF2781B)
+                                                         .setTitle("New IP")
+                                                         .setDescription("One of your licenses has been used on a new IP:")
+                                                         .addField("License", "`" + obfuscateKey + "`", true)
+                                                         .addField("Product", license.getProduct(), true)
+                                                         .addField("IP", "```" + ip + "```", false)
+                );
+            }
+            // Sending new HWID log to the license owner
+            if (newHwid && discordService.isLogNewHwidsToOwner()) {
+                discordService.sendOwnerLog(license, new EmbedBuilder()
+                                                         .setColor(0xF2781B)
+                                                         .setTitle("New HWID")
+                                                         .setDescription("One of your licenses has been used on a new HWID:")
+                                                         .addField("License", "`" + obfuscateKey + "`", true)
+                                                         .addField("Product", license.getProduct(), true)
+                                                         .addField("HWID", "```" + hwid + "```", false)
+                );
+            }
+            
+            // Logging the license use
             log.info("License key '{}' for product '{}' was used by {} (HWID: {})", key, product, ip, hwid);
             return license;
         } catch (APIException ex) {
