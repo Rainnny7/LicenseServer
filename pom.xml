@@ -12,7 +12,7 @@
 
     <groupId>me.braydon</groupId>
     <artifactId>LicenseServer</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <description>A simple open-source licensing server for your products.</description>
 
     <properties>
