@@ -6,12 +6,16 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import me.braydon.license.common.TimeUtils;
+import me.braydon.license.model.License;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
+import net.dv8tion.jda.api.requests.ErrorResponse;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,6 +37,7 @@ public final class DiscordService {
      */
     @Value("${spring.application.name}")
     @NonNull private String applicationName;
+    
     /**
      * The token to the Discord bot.
      */
@@ -68,6 +73,24 @@ public final class DiscordService {
      */
     @Value("${discord.logs.expired}") @Getter
     private boolean logHwidLimitExceeded;
+    
+    /**
+     * Should new IPs be sent to the license owner?
+     */
+    @Value("${discord.owner-logs.newIp}") @Getter
+    private boolean logNewIpsToOwner;
+    
+    /**
+     * Should new HWIDs be sent to the license owner?
+     */
+    @Value("${discord.owner-logs.newHwid}") @Getter
+    private boolean logNewHwidsToOwner;
+    
+    /**
+     * Should the license owner be notified when their license is about to expire?
+     */
+    @Value("${discord.owner-logs.expiringSoon}") @Getter
+    private boolean logExpiringSoonToOwner;
     
     /**
      * The {@link JDA} instance of the bot.
@@ -125,9 +148,33 @@ public final class DiscordService {
             throw new IllegalArgumentException("Log channel %s wasn't found".formatted(logsChannel));
         }
         // Send the log
-        textChannel.sendMessageEmbeds(embed.setFooter("%s v%s - %s".formatted(
-            applicationName, applicationVersion, TimeUtils.dateTime()
-        )).build()).queue();
+        textChannel.sendMessageEmbeds(buildEmbed(embed)).queue();
+    }
+    
+    public void sendOwnerLog(@NonNull License license, @NonNull EmbedBuilder embed) {
+        // We need an owner for the license
+        if (license.getOwnerSnowflake() <= 0L) {
+            return;
+        }
+        // Lookup the owner of the license
+        jda.retrieveUserById(license.getOwnerSnowflake()).queue(owner -> {
+            if (owner == null) { // Couldn't locate the owner of the license
+                return;
+            }
+            owner.openPrivateChannel().queue(channel -> {
+                channel.sendMessageEmbeds(buildEmbed(embed)).queue(null, ex -> {
+                    // Ignore the ex if the owner has priv msgs turned off, we don't care
+                    if (((ErrorResponseException) ex).getErrorResponse() != ErrorResponse.CANNOT_SEND_TO_USER) {
+                        ex.printStackTrace();
+                    }
+                });
+            });
+        }, ex -> {
+            // Ignore the ex if the owner isn't found, we don't care
+            if (((ErrorResponseException) ex).getErrorResponse() != ErrorResponse.UNKNOWN_USER) {
+                ex.printStackTrace();
+            }
+        });
     }
     
     /**
@@ -137,5 +184,18 @@ public final class DiscordService {
      */
     public boolean isReady() {
         return jda != null && (jda.getStatus() == JDA.Status.CONNECTED);
+    }
+    
+    /**
+     * Build the given embed.
+     *
+     * @param embedBuilder the embed builder
+     * @return the built embed
+     */
+    @NonNull
+    private MessageEmbed buildEmbed(@NonNull EmbedBuilder embedBuilder) {
+        return embedBuilder.setFooter("%s v%s - %s".formatted(
+            applicationName, applicationVersion, TimeUtils.dateTime()
+        )).build();
     }
 }

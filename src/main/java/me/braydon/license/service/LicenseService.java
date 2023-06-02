@@ -107,12 +107,13 @@ public final class LicenseService {
         }
         License license = optionalLicense.get(); // The license found
         String hashedIp = BCrypt.hashpw(ip, ipsSalt); // Hash the IP
+        String obfuscateKey = MiscUtils.obfuscateKey(key);
+        boolean newIp = !license.getIps().contains(hashedIp); // Is the IP new?
+        boolean newHwid = !license.getHwids().contains(hwid); // Is the HWID new?
         
         // Log the license being used, if enabled
         if (discordService.isLogUses()) {
             // god i hate sending discord embeds, it's so big and ugly :(
-            boolean newIp = !license.getIps().contains(hashedIp); // Is the IP new?
-            boolean newHwid = !license.getHwids().contains(hwid); // Is the HWID new?
             
             // Constructing tags
             StringBuilder tags = new StringBuilder();
@@ -126,21 +127,14 @@ public final class LicenseService {
                 tags.append("HWID");
             }
             long expirationDate = (license.getCreated().getTime() + license.getDuration()) / 1000L;
+            int ipCount = license.getIps().size();
+            int hwidCount = license.getHwids().size();
             discordService.sendLog(new EmbedBuilder()
                                        .setColor(Color.BLUE)
                                        .setTitle("License Used" + (!tags.isEmpty() ? " (" + tags + ")" : ""))
-                                       .addField("License",
-                                           "`" + MiscUtils.obfuscateKey(key) + "`",
-                                           true
-                                       )
-                                       .addField("Product",
-                                           license.getProduct(),
-                                           true
-                                       )
-                                       .addField("Description",
-                                           license.getDescription(),
-                                           true
-                                       )
+                                       .addField("License", "`" + obfuscateKey + "`", true)
+                                       .addField("Product", license.getProduct(), true)
+                                       .addField("Description", license.getDescription(), true)
                                        .addField("Owner ID",
                                            license.getOwnerSnowflake() <= 0L ? "N/A" : String.valueOf(license.getOwnerSnowflake()),
                                            true
@@ -153,20 +147,14 @@ public final class LicenseService {
                                            license.isPermanent() ? "Never" : "<t:" + expirationDate + ":R>",
                                            true
                                        )
-                                       .addField("IP",
-                                           ip,
-                                           true
-                                       )
-                                       .addField("HWID",
-                                           "```" + hwid + "```",
-                                           false
-                                       )
+                                       .addField("IP", ip, true)
+                                       .addField("HWID", "```" + hwid + "```", false)
                                        .addField("IPs",
-                                           license.getIps().size() + "/" + license.getIpLimit(),
+                                           (newIp ? ipCount + 1 : ipCount) + "/" + license.getIpLimit(),
                                            true
                                        )
                                        .addField("HWIDs",
-                                           license.getHwids().size() + "/" + license.getHwidLimit(),
+                                           (newHwid ? hwidCount + 1 : hwidCount) + "/" + license.getHwidLimit(),
                                            true
                                        )
             );
@@ -178,13 +166,37 @@ public final class LicenseService {
                 discordService.sendLog(new EmbedBuilder()
                                            .setColor(Color.RED)
                                            .setTitle("License Expired")
-                                           .setDescription("License `%s` is expired".formatted(MiscUtils.obfuscateKey(key)))
+                                           .setDescription("License `%s` is expired".formatted(obfuscateKey))
                 );
             }
             throw new LicenseExpiredException();
         }
+        
+        // Sending new IP log to the license owner
+        if (newIp && discordService.isLogNewIpsToOwner()) {
+            discordService.sendOwnerLog(license, new EmbedBuilder()
+                                                     .setColor(0xF2781B)
+                                                     .setTitle("New IP")
+                                                     .setDescription("One of your licenses has been used on a new IP:")
+                                                     .addField("License", "`" + obfuscateKey + "`", true)
+                                                     .addField("Product", license.getProduct(), true)
+                                                     .addField("IP", "```" + ip + "```", false)
+            );
+        }
+        // Sending new HWID log to the license owner
+        if (newHwid && discordService.isLogNewHwidsToOwner()) {
+            discordService.sendOwnerLog(license, new EmbedBuilder()
+                                                     .setColor(0xF2781B)
+                                                     .setTitle("New HWID")
+                                                     .setDescription("One of your licenses has been used on a new HWID:")
+                                                     .addField("License", "`" + obfuscateKey + "`", true)
+                                                     .addField("Product", license.getProduct(), true)
+                                                     .addField("HWID", "```" + hwid + "```", false)
+            );
+        }
+        // Use the license
         try {
-            license.use(hashedIp, hwid); // Use the license
+            license.use(hashedIp, hwid);
             repository.save(license); // Save the used license
             log.info("License key '{}' for product '{}' was used by {} (HWID: {})", key, product, ip, hwid);
             return license;
@@ -195,7 +207,7 @@ public final class LicenseService {
                                            .setColor(Color.RED)
                                            .setTitle("License IP Limit Reached")
                                            .setDescription("License `%s` has reached it's IP limit: **%s**".formatted(
-                                               MiscUtils.obfuscateKey(key),
+                                               obfuscateKey,
                                                license.getIpLimit()
                                            ))
                 );
@@ -204,7 +216,7 @@ public final class LicenseService {
                                            .setColor(Color.RED)
                                            .setTitle("License HWID Limit Reached")
                                            .setDescription("License `%s` has reached it's HWID limit: **%s**".formatted(
-                                               MiscUtils.obfuscateKey(key),
+                                               obfuscateKey,
                                                license.getHwidLimit()
                                            ))
                 );
