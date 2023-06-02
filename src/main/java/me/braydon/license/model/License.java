@@ -95,6 +95,18 @@ public class License {
     @NonNull private Date created;
     
     /**
+     * Check if the Discord user
+     * with the given snowflake
+     * owns this license.
+     *
+     * @param snowflake the snowflake
+     * @return true if owns, otherwise false
+     */
+    public boolean isOwner(long snowflake) {
+        return ownerSnowflake == snowflake;
+    }
+    
+    /**
      * Check if this license has expired.
      * <p>
      * If this license has no

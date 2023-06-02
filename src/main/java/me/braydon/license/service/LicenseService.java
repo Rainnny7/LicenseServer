@@ -143,7 +143,7 @@ public final class LicenseService {
                                            license.getOwnerName() == null ? "N/A" : license.getOwnerName(),
                                            true
                                        )
-                                       .addField("Expires",
+                                       .addField("Expiration",
                                            expires == -1L ? "Never" : "<t:" + expires + ":R>",
                                            true
                                        )

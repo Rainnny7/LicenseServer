@@ -1,26 +1,39 @@
 package me.braydon.license.service;
 
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import me.braydon.license.common.MiscUtils;
 import me.braydon.license.common.TimeUtils;
 import me.braydon.license.model.License;
+import me.braydon.license.repository.LicenseRepository;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.requests.ErrorResponse;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.stereotype.Service;
+
+import java.awt.*;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * @author Braydon
@@ -29,9 +42,21 @@ import org.springframework.stereotype.Service;
 @Slf4j(topic = "Discord")
 public final class DiscordService {
     /**
+     * The {@link LicenseRepository} to use.
+     */
+    @Nonnull private final LicenseRepository licenseRepository;
+    
+    /**
      * The version of this Springboot application.
      */
     @NonNull private final String applicationVersion;
+    
+    /**
+     * The salt to use for hashing license keys.
+     */
+    @Value("${salts.licenses}")
+    @NonNull private String licensesSalt;
+    
     /**
      * The name of this Springboot application.
      */
@@ -92,7 +117,9 @@ public final class DiscordService {
     private JDA jda;
     
     @Autowired
-    public DiscordService(@NonNull BuildProperties buildProperties) {
+    public DiscordService(@NonNull LicenseRepository licenseRepository, @NonNull BuildProperties buildProperties) {
+        this.licenseRepository = licenseRepository;
+        ;
         this.applicationVersion = buildProperties.getVersion();
     }
     
@@ -111,6 +138,7 @@ public final class DiscordService {
                       GatewayIntent.GUILD_MEMBERS
                   ).setStatus(OnlineStatus.DO_NOT_DISTURB)
                   .setActivity(Activity.watching("your licenses"))
+                  .addEventListeners(new EventHandler())
                   .build();
         jda.awaitReady(); // Await JDA to be ready
         
@@ -118,6 +146,13 @@ public final class DiscordService {
         log.info("Logged into {} in {}ms",
             jda.getSelfUser().getAsTag(), System.currentTimeMillis() - before
         );
+        
+        // Registering slash commands
+        jda.updateCommands().addCommands(
+            Commands.slash("license", "Manage one of your licenses")
+                .addOption(OptionType.STRING, "key", "The license key", true)
+                .addOption(OptionType.STRING, "product", "The product the license is for", true)
+        ).queue();
     }
     
     /**
@@ -204,5 +239,66 @@ public final class DiscordService {
         return embedBuilder.setFooter("%s v%s - %s".formatted(
             applicationName, applicationVersion, TimeUtils.dateTime()
         )).build();
+    }
+    
+    /**
+     * The event handler for the bot.
+     */
+    public class EventHandler extends ListenerAdapter {
+        @Override
+        public void onSlashCommandInteraction(@NonNull SlashCommandInteractionEvent event) {
+            User user = event.getUser(); // The command executor
+            
+            // Handle the license command
+            if (event.getName().equals("license")) {
+                String key = Objects.requireNonNull(event.getOption("key")).getAsString();
+                String product = Objects.requireNonNull(event.getOption("product")).getAsString();
+                event.deferReply().queue(); // Send thinking...
+                
+                // License lookup
+                Optional<License> optionalLicense = licenseRepository.getLicense(BCrypt.hashpw(key, licensesSalt), product);
+                if (optionalLicense.isEmpty() // License not found or owned by someone else
+                        || (!optionalLicense.get().isOwner(user.getIdLong()))) {
+                    event.getHook().sendMessageEmbeds(buildEmbed(new EmbedBuilder()
+                                                                     .setColor(Color.RED)
+                                                                     .setTitle("License not found")
+                                                                     .setDescription("Could not locate the license you were looking for")
+                    )).queue(); // Send the error message
+                    return;
+                }
+                License license = optionalLicense.get(); // The found license
+                String obfuscateKey = MiscUtils.obfuscateKey(key); // Obfuscate the key
+                long expires = license.isPermanent() ? -1L : license.getExpires().getTime() / 1000L;
+                long lastUsed = license.getLastUsed() == null ? -1L : license.getExpires().getTime() / 1000L;
+                event.getHook().sendMessageEmbeds(buildEmbed(new EmbedBuilder()
+                                                                 .setColor(Color.BLUE)
+                                                                 .setTitle("Your License")
+                                                                 .addField("License", "`" + obfuscateKey + "`", true)
+                                                                 .addField("Product", license.getProduct(), true)
+                                                                 .addField("Description", license.getDescription(), true)
+                                                                 .addField("Expiration",
+                                                                     expires == -1L ? "Never" : "<t:" + expires + ":R>",
+                                                                     true
+                                                                 )
+                                                                 .addField("Uses", String.valueOf(license.getUses()), true)
+                                                                 .addField("Last Used",
+                                                                     lastUsed == -1L ? "Never" : "<t:" + lastUsed + ":R>",
+                                                                     true
+                                                                 )
+                                                                 .addField("IPs",
+                                                                     license.getIps().size() + "/" + license.getIpLimit(),
+                                                                     true
+                                                                 )
+                                                                 .addField("HWIDs",
+                                                                     license.getHwids().size() + "/" + license.getHwidLimit(),
+                                                                     true
+                                                                 )
+                                                                 .addField("Created",
+                                                                     "<t:" + (license.getCreated().getTime() / 1000L) + ":R>",
+                                                                     true
+                                                                 )
+                )).queue();
+            }
+        }
     }
 }
