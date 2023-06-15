@@ -1,8 +1,10 @@
 package me.braydon.license.service;
 
+import jakarta.annotation.PostConstruct;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import me.braydon.license.common.MiscUtils;
+import me.braydon.license.common.RandomUtils;
 import me.braydon.license.exception.*;
 import me.braydon.license.model.License;
 import me.braydon.license.repository.LicenseRepository;
@@ -51,6 +53,29 @@ public final class LicenseService {
     public LicenseService(@NonNull LicenseRepository repository, @NonNull DiscordService discordService) {
         this.repository = repository;
         this.discordService = discordService;
+    }
+    
+    /**
+     * Create a default license key
+     * when no other keys exist.
+     * TODO: Remove this in the future and replace with creation API route
+     */
+    @PostConstruct
+    public void onInitialize() {
+        if (repository.count() == 0L) { // No license keys found, create default
+            String licenseKey = RandomUtils.generateLicenseKey(); // The license key
+            create(
+                licenseKey,
+                "Example",
+                "Example",
+                0L,
+                null,
+                1,
+                1,
+                null
+            );
+            log.info("Generated default license: {}", licenseKey);
+        }
     }
     
     /**
