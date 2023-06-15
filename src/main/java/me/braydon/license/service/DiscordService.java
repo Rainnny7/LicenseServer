@@ -166,7 +166,7 @@ public final class DiscordService {
         
         // Log that we're logged in
         log.info("Logged into {} in {}ms",
-            jda.getSelfUser().getAsTag(), System.currentTimeMillis() - before
+            jda.getSelfUser().getEffectiveName(), System.currentTimeMillis() - before
         );
         
         // Registering slash commands
