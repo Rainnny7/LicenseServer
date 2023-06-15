@@ -153,28 +153,34 @@ public final class DiscordService {
             return;
         }
         // Initialize the bot
-        long before = System.currentTimeMillis();
-        log.info("Logging in..."); // Log that we're logging in
-        jda = JDABuilder.createDefault(token)
-                  .enableIntents(
-                      GatewayIntent.GUILD_MEMBERS
-                  ).setStatus(OnlineStatus.DO_NOT_DISTURB)
-                  .setActivity(Activity.watching("your licenses"))
-                  .addEventListeners(new EventHandler())
-                  .build();
-        jda.awaitReady(); // Await JDA to be ready
-        
-        // Log that we're logged in
-        log.info("Logged into {} in {}ms",
-            jda.getSelfUser().getEffectiveName(), System.currentTimeMillis() - before
-        );
-        
-        // Registering slash commands
-        jda.updateCommands().addCommands(
-            Commands.slash("license", "Manage one of your licenses")
-                .addOption(OptionType.STRING, "key", "The license key", true)
-                .addOption(OptionType.STRING, "product", "The product the license is for", true)
-        ).queue();
+        new Thread(() -> {
+            long before = System.currentTimeMillis();
+            log.info("Logging in..."); // Log that we're logging in
+            jda = JDABuilder.createDefault(token)
+                      .enableIntents(
+                          GatewayIntent.GUILD_MEMBERS
+                      ).setStatus(OnlineStatus.DO_NOT_DISTURB)
+                      .setActivity(Activity.watching("your licenses"))
+                      .addEventListeners(new EventHandler())
+                      .build();
+            try {
+                jda.awaitReady(); // Await JDA to be ready
+                
+                // Log that we're logged in
+                log.info("Logged into {} in {}ms",
+                    jda.getSelfUser().getEffectiveName(), System.currentTimeMillis() - before
+                );
+                
+                // Registering slash commands
+                jda.updateCommands().addCommands(
+                    Commands.slash("license", "Manage one of your licenses")
+                        .addOption(OptionType.STRING, "key", "The license key", true)
+                        .addOption(OptionType.STRING, "product", "The product the license is for", true)
+                ).queue();
+            } catch (InterruptedException ex) {
+                ex.printStackTrace();
+            }
+        }, "Discord Bot Thread").start();
     }
     
     /**
@@ -269,6 +275,10 @@ public final class DiscordService {
     public class EventHandler extends ListenerAdapter {
         @Override
         public void onSlashCommandInteraction(@NonNull SlashCommandInteractionEvent event) {
+            // Bot isn't ready, don't handle events
+            if (!isReady()) {
+                return;
+            }
             User user = event.getUser(); // The command executor
             
             // Handle the license command
@@ -339,6 +349,10 @@ public final class DiscordService {
         
         @Override
         public void onButtonInteraction(@NonNull ButtonInteractionEvent event) {
+            // Bot isn't ready, don't handle events
+            if (!isReady()) {
+                return;
+            }
             User user = event.getUser(); // The user who clicked the button
             String componentId = event.getComponentId(); // The button id
             
