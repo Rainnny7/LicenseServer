@@ -156,12 +156,12 @@ public final class DiscordService {
         long before = System.currentTimeMillis();
         log.info("Logging in..."); // Log that we're logging in
         System.out.println("Step 1");
-        jda = JDABuilder.createDefault(token)
+        JDA jda = JDABuilder.createDefault(token)
                   .enableIntents(
                       GatewayIntent.GUILD_MEMBERS
-                  ).setStatus(OnlineStatus.DO_NOT_DISTURB)
-                  .setActivity(Activity.watching("your licenses"))
-                  .addEventListeners(new EventHandler())
+                  )
+                      //                  .setActivity(Activity.watching("your licenses"))
+                      //                  .addEventListeners(new EventHandler())
                   .build();
         System.out.println("step 2");
         try {
