@@ -14,7 +14,7 @@ COPY src ./src
 RUN mvn clean package -T12
 
 # Stage 2: Running
-FROM openjdk:17.0.1-jdk-slim
+FROM openjdk:17.0.2-jdk-slim
 
 # Set the work dir inside the container
 WORKDIR /usr/local/app
