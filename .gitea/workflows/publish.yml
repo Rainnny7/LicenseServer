@@ -10,20 +10,16 @@ jobs:
       matrix:
         arch: [ "ubuntu-latest" ]
         git-version: [ "2.38.4" ]
+
     runs-on: ${{ matrix.arch }}
     container: git.rainnny.club/rainnny/gitea-runner:node-18
     steps:
-      # Checkout the repo
       - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        uses: https://github.com/actions/checkout@v3
 
-      # Setup Docker BuildX
       - name: Set up Docker Buildx
         uses: https://github.com/docker/setup-buildx-action@v2
 
-      # Login to Docker
       - name: Login to Repo
         uses: https://github.com/docker/login-action@v2
         with:
@@ -31,7 +27,6 @@ jobs:
           username: ${{ secrets.REPO_USERNAME }}
           password: ${{ secrets.REPO_TOKEN }}
 
-      # Push the package
       - name: Build and Push
         uses: docker/build-push-action@v4
         with:
