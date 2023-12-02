@@ -1,5 +1,8 @@
-# LicenseServer
+[![Discord](https://discord.com/api/guilds/827863713855176755/widget.png)](https://discord.gg/p9gzFE2bc6)
+![Wakatime Hours](https://wakatime.rainnny.club/api/badge/Rainnny/interval:any/project:LicenseServer)
+[![Download](https://img.shields.io/badge/Download-Releases-darkgreen.svg)](https://git.rainnny.club/Rainnny/LicenseServer/releases)
 
+# LicenseServer
 A simple open-source licensing server for your products.
 
 ## Discord Preview
