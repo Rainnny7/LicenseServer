@@ -1,13 +1,15 @@
+/*
+ * Copyright (c) 2023 Braydon (Rainnny). All rights reserved.
+ *
+ * For inquiries, please contact braydonrainnny@gmail.com
+ */
 package me.braydon.example;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.ToString;
+import lombok.*;
 import okhttp3.*;
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
@@ -15,9 +17,18 @@ import oshi.hardware.ComputerSystem;
 import oshi.hardware.HardwareAbstractionLayer;
 import oshi.software.os.OperatingSystem;
 
+import javax.crypto.Cipher;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.security.KeyFactory;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.X509EncodedKeySpec;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,51 +43,93 @@ import java.util.Map;
  * @author Braydon
  * @see <a href="https://git.rainnny.club/Rainnny/LicenseServer">License Server</a>
  */
-public final class LicenseExample {
+public final class LicenseClient {
+    private static final String ALGORITHM = "RSA"; // The crypto algorithm to use
+    
+    /**
+     * The endpoint to use for downloading the {@link PublicKey}.
+     */
+    private static final String PUBLIC_KEY_ENDPOINT = "/crypto/pub";
+    
     /**
      * The endpoint to check licenses at.
      */
-    private static final String CHECK_ENDPOINT = "http://localhost:7500/check";
+    private static final String CHECK_ENDPOINT = "/check";
     
     /**
      * The {@link Gson} instance to use.
      */
-    private static final Gson GSON = new GsonBuilder()
-                                         .serializeNulls()
-                                         .create();
+    private static final Gson GSON = new GsonBuilder().serializeNulls().create();
+    
+    /**
+     * The URL of the license server to make requests to.
+     */
+    @NonNull private final String appUrl;
+    
+    /**
+     * The product to use for client.
+     */
+    @NonNull private final String product;
+    
+    /**
+     * The {@link OkHttpClient} to use for requests.
+     */
+    @NonNull private final OkHttpClient httpClient;
+    
+    /**
+     * The {@link PublicKey} to use for encryption.
+     */
+    @NonNull private final PublicKey publicKey;
+    
+    public LicenseClient(@NonNull String appUrl, @NonNull String product, @NonNull File publicKeyFile) {
+        this.appUrl = appUrl;
+        this.product = product;
+        httpClient = new OkHttpClient(); // Create a new http client
+        publicKey = fetchPublicKey(publicKeyFile); // Fetch our public key
+    }
+    
+    /**
+     * Read the public key from the given bytes.
+     *
+     * @param bytes the bytes of the public key
+     * @return the public key
+     * @see PrivateKey for public key
+     */
+    @SneakyThrows
+    private static PublicKey readPublicKey(byte[] bytes) {
+        return KeyFactory.getInstance(ALGORITHM).generatePublic(new X509EncodedKeySpec(bytes));
+    }
     
     /**
      * Check the license with the given
      * key for the given product.
      *
      * @param key     the key to check
-     * @param product the product the key belongs to
      * @return the license response
      * @see LicenseResponse for response
      */
     @NonNull
-    public static LicenseResponse check(@NonNull String key, @NonNull String product) {
+    public LicenseResponse check(@NonNull String key) {
         String hardwareId = getHardwareId(); // Get the hardware id of the machine
         
         // Build the json body
         Map<String, Object> body = new HashMap<>();
-        body.put("key", key);
+        body.put("key", encrypt(key));
         body.put("product", product);
-        body.put("hwid", hardwareId);
+        body.put("hwid", encrypt(hardwareId));
         String bodyJson = GSON.toJson(body); // The json body
         
-        OkHttpClient client = new OkHttpClient(); // Create a new http client
         MediaType mediaType = MediaType.parse("application/json"); // Ensure the media type is json
-        RequestBody requestBody = RequestBody.create(bodyJson, mediaType); // Build the request body
+        RequestBody requestBody = RequestBody.create(mediaType, bodyJson); // Build the request body
         Request request = new Request.Builder()
-                              .url(CHECK_ENDPOINT)
+                              .url(appUrl + CHECK_ENDPOINT)
                               .post(requestBody)
                               .build(); // Build the POST request
         
         Response response = null; // The response of the request
         int responseCode = -1; // The response code of the request
         try { // Attempt to execute the request
-            response = client.newCall(request).execute();
+            response = httpClient.newCall(request).execute();
             responseCode = response.code();
             
             // If the response is successful, we can parse the response
@@ -128,13 +181,50 @@ public final class LicenseExample {
     }
     
     /**
+     * Fetch the public key.
+     * <p>
+     * If the public key is not already present, we
+     * fetch it from the server. Otherwise, the public
+     * key is loaded from the file.
+     * </p>
+     *
+     * @param publicKeyFile the public key file
+     * @return the public key
+     * @see PublicKey for public key
+     */
+    @SneakyThrows
+    private PublicKey fetchPublicKey(@NonNull File publicKeyFile) {
+        byte[] publicKey;
+        if (publicKeyFile.exists()) { // Public key exists, use it
+            publicKey = Files.readAllBytes(publicKeyFile.toPath());
+        } else {
+            Request request = new Request.Builder()
+                                  .url(appUrl + PUBLIC_KEY_ENDPOINT)
+                                  .build(); // Build the GET request
+            @Cleanup Response response = httpClient.newCall(request).execute(); // Make the request
+            if (!response.isSuccessful()) { // Response wasn't successful
+                throw new IOException("Failed to download the public key, got response " + response.code());
+            }
+            ResponseBody body = response.body(); // Get the response body
+            assert body != null; // We need a response body
+            publicKey = body.bytes(); // Read our public key
+            
+            // Write the response to the public key file
+            try (FileOutputStream outputStream = new FileOutputStream(publicKeyFile)) {
+                outputStream.write(publicKey);
+            }
+        }
+        return readPublicKey(publicKey);
+    }
+    
+    /**
      * Get the unique hardware
      * identifier of this machine.
      *
      * @return the hardware id
      */
     @NonNull
-    private static String getHardwareId() {
+    private String getHardwareId() {
         SystemInfo systemInfo = new SystemInfo();
         OperatingSystem operatingSystem = systemInfo.getOperatingSystem();
         HardwareAbstractionLayer hardwareAbstractionLayer = systemInfo.getHardware();
@@ -155,9 +245,25 @@ public final class LicenseExample {
                    + String.format("%08x", processorIdentifier.hashCode()) + "-" + processors;
     }
     
-    @AllArgsConstructor
-    @Getter
-    @ToString
+    /**
+     * Encrypt the given input.
+     *
+     * @param input the encrypted input
+     * @return the encrypted result
+     */
+    @SneakyThrows @NonNull
+    private String encrypt(@NonNull String input) {
+        Cipher cipher = Cipher.getInstance(ALGORITHM); // Create our cipher
+        cipher.init(Cipher.ENCRYPT_MODE, publicKey); // Set our mode and public key
+        return Base64.getEncoder().encodeToString(cipher.doFinal(input.getBytes())); // Return our encrypted result
+    }
+    
+    /**
+     * The response of a license check.
+     *
+     * @see #check(String)
+     */
+    @AllArgsConstructor @Getter @ToString
     public static class LicenseResponse {
         /**
          * The status code of the response.

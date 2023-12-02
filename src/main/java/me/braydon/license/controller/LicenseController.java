@@ -1,12 +1,19 @@
+/*
+ * Copyright (c) 2023 Braydon (Rainnny). All rights reserved.
+ *
+ * For inquiries, please contact braydonrainnny@gmail.com
+ */
 package me.braydon.license.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.NonNull;
+import me.braydon.license.common.CryptographyUtils;
 import me.braydon.license.common.IPUtils;
 import me.braydon.license.dto.LicenseCheckBodyDTO;
 import me.braydon.license.dto.LicenseDTO;
 import me.braydon.license.exception.APIException;
 import me.braydon.license.model.License;
+import me.braydon.license.service.CryptographyService;
 import me.braydon.license.service.LicenseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,6 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.PrivateKey;
 import java.util.Map;
 
 /**
@@ -23,13 +31,19 @@ import java.util.Map;
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON_VALUE)
 public final class LicenseController {
     /**
+     * The {@link CryptographyService} to use.
+     */
+    @NonNull private final CryptographyService cryptographyService;
+    
+    /**
      * The {@link LicenseService} to use.
      */
-    @NonNull private final LicenseService service;
+    @NonNull private final LicenseService licenseService;
     
     @Autowired
-    public LicenseController(@NonNull LicenseService service) {
-        this.service = service;
+    public LicenseController(@NonNull CryptographyService cryptographyService, @NonNull LicenseService licenseService) {
+        this.cryptographyService = cryptographyService;
+        this.licenseService = licenseService;
     }
     
     /**
@@ -53,24 +67,34 @@ public final class LicenseController {
             if (IPUtils.getIpType(ip) == -1) {
                 throw new APIException(HttpStatus.BAD_REQUEST, "Invalid IP address");
             }
-            // Ensure the HWID is valid
-            String hwidString = body.getHwid();
+            String key;
+            String hwid;
+            try {
+                PrivateKey privateKey = cryptographyService.getKeyPair().getPrivate(); // Get our private key
+                key = CryptographyUtils.decryptMessage(body.getKey(), privateKey); // Decrypt our license key
+                hwid = CryptographyUtils.decryptMessage(body.getHwid(), privateKey); // Decrypt our hwid
+            } catch (IllegalArgumentException ex) {
+                throw new APIException(HttpStatus.BAD_REQUEST, "Signature Error");
+            }
+            
+            // Validating that the UUID is in the correct format
             boolean invalidHwid = true;
-            if (hwidString.contains("-")) {
-                int segments = hwidString.substring(0, hwidString.lastIndexOf("-")).split("-").length;
+            if (hwid.contains("-")) {
+                int segments = hwid.substring(0, hwid.lastIndexOf("-")).split("-").length;
                 if (segments == 4) {
                     invalidHwid = false;
                 }
             }
-            if (invalidHwid) {
+            if (invalidHwid) { // Invalid HWID
                 throw new APIException(HttpStatus.BAD_REQUEST, "Invalid HWID");
             }
+            
             // Check the license
-            License license = service.check(
-                body.getKey(),
+            License license = licenseService.check(
+                key,
                 body.getProduct(),
                 ip,
-                hwidString
+                hwid
             );
             // Return OK with the license DTO
             return ResponseEntity.ok(new LicenseDTO(

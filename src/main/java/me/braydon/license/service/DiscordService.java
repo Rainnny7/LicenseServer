@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2023 Braydon (Rainnny). All rights reserved.
+ *
+ * For inquiries, please contact braydonrainnny@gmail.com
+ */
 package me.braydon.license.service;
 
 import com.google.common.cache.Cache;
@@ -33,7 +38,6 @@ import net.dv8tion.jda.api.requests.GatewayIntent;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.info.BuildProperties;
 import org.springframework.stereotype.Service;
 
 import java.awt.*;
@@ -59,7 +63,7 @@ public final class DiscordService {
     /**
      * The version of this Springboot application.
      */
-    @NonNull private final String applicationVersion;
+    @NonNull private String applicationVersion = "n/a";
     
     /**
      * The salt to use for hashing license keys.
@@ -140,9 +144,9 @@ public final class DiscordService {
                                                             .build();
     
     @Autowired
-    public DiscordService(@NonNull LicenseRepository licenseRepository, @NonNull BuildProperties buildProperties) {
+    public DiscordService(@NonNull LicenseRepository licenseRepository/*, @NonNull BuildProperties buildProperties*/) {
         this.licenseRepository = licenseRepository;
-        this.applicationVersion = buildProperties.getVersion();
+        //        this.applicationVersion = buildProperties.getVersion();
     }
     
     @PostConstruct @SneakyThrows

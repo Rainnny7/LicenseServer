@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2023 Braydon (Rainnny). All rights reserved.
+ *
+ * For inquiries, please contact braydonrainnny@gmail.com
+ */
 package me.braydon.license.service;
 
 import jakarta.annotation.PostConstruct;
