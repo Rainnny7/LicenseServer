@@ -153,34 +153,36 @@ public final class DiscordService {
             return;
         }
         // Initialize the bot
-        new Thread(() -> {
-            long before = System.currentTimeMillis();
-            log.info("Logging in..."); // Log that we're logging in
-            jda = JDABuilder.createDefault(token)
-                      .enableIntents(
-                          GatewayIntent.GUILD_MEMBERS
-                      ).setStatus(OnlineStatus.DO_NOT_DISTURB)
-                      .setActivity(Activity.watching("your licenses"))
-                      .addEventListeners(new EventHandler())
-                      .build();
-            try {
-                jda.awaitReady(); // Await JDA to be ready
-                
-                // Log that we're logged in
-                log.info("Logged into {} in {}ms",
-                    jda.getSelfUser().getEffectiveName(), System.currentTimeMillis() - before
-                );
-                
-                // Registering slash commands
-                jda.updateCommands().addCommands(
-                    Commands.slash("license", "Manage one of your licenses")
-                        .addOption(OptionType.STRING, "key", "The license key", true)
-                        .addOption(OptionType.STRING, "product", "The product the license is for", true)
-                ).queue();
-            } catch (InterruptedException ex) {
-                ex.printStackTrace();
-            }
-        }, "Discord Bot Thread").start();
+        long before = System.currentTimeMillis();
+        log.info("Logging in..."); // Log that we're logging in
+        System.out.println("Step 1");
+        jda = JDABuilder.createDefault(token)
+                  .enableIntents(
+                      GatewayIntent.GUILD_MEMBERS
+                  ).setStatus(OnlineStatus.DO_NOT_DISTURB)
+                  .setActivity(Activity.watching("your licenses"))
+                  .addEventListeners(new EventHandler())
+                  .build();
+        System.out.println("step 2");
+        try {
+            jda.awaitReady(); // Await JDA to be ready
+            System.out.println("await complete");
+            
+            // Log that we're logged in
+            log.info("Logged into {} in {}ms",
+                jda.getSelfUser().getEffectiveName(), System.currentTimeMillis() - before
+            );
+            
+            // Registering slash commands
+            jda.updateCommands().addCommands(
+                Commands.slash("license", "Manage one of your licenses")
+                    .addOption(OptionType.STRING, "key", "The license key", true)
+                    .addOption(OptionType.STRING, "product", "The product the license is for", true)
+            ).queue();
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
+        }
+        System.out.println("finish");
     }
     
     /**
