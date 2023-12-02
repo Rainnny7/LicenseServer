@@ -106,6 +106,8 @@ public final class LicenseService {
         license.setDescription(description); // Use the given description, if any
         license.setOwnerSnowflake(ownerSnowflake);
         license.setOwnerName(ownerName);
+        license.setPlan("Basic");
+        license.setLatestVersion("1.0");
         license.setIps(new HashSet<>());
         license.setHwids(new HashSet<>());
         license.setIpLimit(ipLimit); // Use the given IP limit

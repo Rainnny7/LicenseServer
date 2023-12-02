@@ -18,10 +18,12 @@ public final class Main {
             System.err.println("Invalid license: " + response.getError());
             return;
         }
+        System.out.println("response = " + response);
+        
         // License is valid
         System.out.println("License is valid!");
         if (response.getOwnerName() != null) {
-            System.out.println("Welcome " + response.getOwnerName() + "!");
+            System.out.println("Welcome " + response.getOwnerName() + "! Your plan is " + response.getPlan() + " and the latest version is " + response.getLatestVersion());
         }
         if (response.getDescription() != null) {
             System.out.println("Description: " + response.getDescription()); // License description

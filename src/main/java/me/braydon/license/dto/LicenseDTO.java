@@ -7,6 +7,7 @@ package me.braydon.license.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.ToString;
 import me.braydon.license.model.License;
 
@@ -39,6 +40,16 @@ public class LicenseDTO {
      * </p>
      */
     private String ownerName;
+    
+    /**
+     * The plan for this license.
+     */
+    @NonNull private String plan;
+    
+    /**
+     * The latest version of the product this license is for.
+     */
+    @NonNull private String latestVersion;
     
     /**
      * The optional expiration {@link Date} of this license.

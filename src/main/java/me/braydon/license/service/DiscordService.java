@@ -63,7 +63,7 @@ public final class DiscordService {
     /**
      * The version of this Springboot application.
      */
-    @NonNull private String applicationVersion = "n/a";
+    @NonNull private final String applicationVersion = "n/a";
     
     /**
      * The salt to use for hashing license keys.
@@ -317,6 +317,7 @@ public final class DiscordService {
                                                                          expires == -1L ? "Never" : "<t:" + expires + ":R>",
                                                                          true
                                                                      )
+                                                                     .addField("Plan", license.getPlan(), true)
                                                                      .addField("Uses", String.valueOf(license.getUses()), true)
                                                                      .addField("Last Used",
                                                                          lastUsed == -1L ? "Never" : "<t:" + lastUsed + ":R>",

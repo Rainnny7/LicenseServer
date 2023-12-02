@@ -141,6 +141,8 @@ public final class LicenseClient {
                 JsonElement description = json.get("description");
                 JsonElement ownerSnowflake = json.get("ownerSnowflake");
                 JsonElement ownerName = json.get("ownerName");
+                JsonElement plan = json.get("plan");
+                JsonElement latestVersion = json.get("latestVersion");
                 
                 // Parsing the expiration date if we have one
                 JsonElement expires = json.get("expires");
@@ -155,6 +157,8 @@ public final class LicenseClient {
                     description.isJsonNull() ? null : description.getAsString(),
                     ownerSnowflake.isJsonNull() ? -1 : ownerSnowflake.getAsLong(),
                     ownerName.isJsonNull() ? null : ownerName.getAsString(),
+                    plan.getAsString(),
+                    latestVersion.getAsString(),
                     expires.isJsonNull() ? null : expiresDate
                 );
             } else {
@@ -291,6 +295,16 @@ public final class LicenseClient {
          * if valid and there is an owner.
          */
         private String ownerName;
+        
+        /**
+         * The plan for this license.
+         */
+        @NonNull private String plan;
+        
+        /**
+         * The latest version of the product this license is for.
+         */
+        @NonNull private String latestVersion;
         
         /**
          * The optional expiration {@link Date} of the license.

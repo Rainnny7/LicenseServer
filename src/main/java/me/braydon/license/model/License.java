@@ -63,6 +63,16 @@ public class License {
     private String ownerName;
     
     /**
+     * The plan for this license.
+     */
+    @NonNull private String plan;
+    
+    /**
+     * The latest version of the product this license is for.
+     */
+    @NonNull private String latestVersion;
+    
+    /**
      * The amount of uses this license has.
      */
     private int uses;
