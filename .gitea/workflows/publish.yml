@@ -12,7 +12,7 @@ jobs:
         git-version: [ "2.38.4" ]
 
     runs-on: ${{ matrix.arch }}
-    container: git.rainnny.club/rainnny/gitea-runner:node-18
+    container: fascinated/docker-images:nodejs_20
     steps:
       - name: Checkout
         uses: https://github.com/actions/checkout@v3
