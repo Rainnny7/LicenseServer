@@ -302,7 +302,7 @@ public final class DiscordService {
                     License license = optionalLicense.get(); // The found license
                     String obfuscateKey = MiscUtils.obfuscateKey(key); // Obfuscate the key
                     long expires = license.isPermanent() ? -1L : license.getExpires().getTime() / 1000L;
-                    long lastUsed = license.getLastUsed() == null ? -1L : license.getExpires().getTime() / 1000L;
+                    long lastUsed = license.getLastUsed() == null ? -1L : license.getLastUsed().getTime() / 1000L;
                     event.getHook().sendMessageEmbeds(buildEmbed(new EmbedBuilder()
                                                                      .setColor(Color.BLUE)
                                                                      .setTitle("Your License")
