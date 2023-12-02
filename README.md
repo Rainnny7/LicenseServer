@@ -18,11 +18,11 @@ POST /check
 
 #### Body
 
-| Key       | Type     | Description                                    |
-|:----------|:---------|:-----------------------------------------------|
-| `key`     | `string` | **Required**. Your license key                 |
-| `product` | `string` | **Required**. The product the license is for   |
-| `hwid`    | `string` | **Required**. The hardware id of the requester |
+| Key       | Type     | Description                                                     |
+|:----------|:---------|:----------------------------------------------------------------|
+| `key`     | `string` | **Required**. Your base64 encrypted license key                 |
+| `product` | `string` | **Required**. The product the license is for                    |
+| `hwid`    | `string` | **Required**. The base64 encrypted hardware id of the requester |
 
 #### Response
 

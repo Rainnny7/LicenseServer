@@ -14,6 +14,7 @@ import me.braydon.license.exception.LicenseHwidLimitExceededException;
 import me.braydon.license.exception.LicenseIpLimitExceededException;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.Date;
 import java.util.Set;
@@ -49,6 +50,7 @@ public class License {
      * If this is -1, the license is not owned by anyone.
      * </p>
      */
+    @Field("owner.snowflake")
     private long ownerSnowflake;
     
     /**
@@ -57,6 +59,7 @@ public class License {
      * If this is null, the license is not owned by anyone.
      * </p>
      */
+    @Field("owner.name")
     private String ownerName;
     
     /**
