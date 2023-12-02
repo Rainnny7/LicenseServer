@@ -157,9 +157,6 @@ public final class DiscordService {
         log.info("Logging in..."); // Log that we're logging in
         System.out.println("Step 1");
         JDA jda = JDABuilder.createDefault(token)
-                  .enableIntents(
-                      GatewayIntent.GUILD_MEMBERS
-                  )
                       //                  .setActivity(Activity.watching("your licenses"))
                       //                  .addEventListeners(new EventHandler())
                   .build();
