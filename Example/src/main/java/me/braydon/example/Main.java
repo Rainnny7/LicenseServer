@@ -18,8 +18,6 @@ public final class Main {
             System.err.println("Invalid license: " + response.getError());
             return;
         }
-        System.out.println("response = " + response);
-        
         // License is valid
         System.out.println("License is valid!");
         if (response.getOwnerName() != null) {
